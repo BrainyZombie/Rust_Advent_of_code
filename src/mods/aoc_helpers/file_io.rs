@@ -1,7 +1,8 @@
-use std::{env::Args, fs};
-pub fn file_io<F>(mut args: Args, f: F) -> Result<String, String>
+use std::fs;
+pub fn file_io<T, F>(mut args: T, f: F) -> Result<String, String>
 where
-    F: FnOnce(&str, Args) -> Result<String, String>,
+    T: Iterator<Item = String>,
+    F: FnOnce(&str, T) -> Result<String, String>,
 {
     let input_file_path = match args.next() {
         Some(s) => s,
@@ -26,4 +27,58 @@ where
                 Ok(output)
             }
         })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn no_input_path() {
+        let mut args = Box::from(vec![].into_iter());
+        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        assert_eq!(result, Err(String::from("No input file path specified!")));
+    }
+    #[test]
+    fn no_output_path() {
+        let mut args = Box::from(vec![String::from("assets/input1.txt")].into_iter());
+        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        assert_eq!(result, Err(String::from("No output file path specified!")));
+    }
+    #[test]
+    fn invalid_input_path() {
+        let mut args = Box::from(
+            vec![
+                String::from("assets/test_1.txt"),
+                String::from("assets/test_output.txt"),
+            ]
+            .into_iter(),
+        );
+        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        assert!(result.is_err_and(|s| s.starts_with("Read file error:")));
+    }
+    #[test]
+    fn internal_error() {
+        let mut args = Box::from(
+            vec![
+                String::from("assets/test.txt"),
+                String::from("assets/test_output.txt"),
+            ]
+            .into_iter(),
+        );
+        let result = file_io(&mut args, |s, _| Err(s.to_string()));
+        assert_eq!(result, Err(String::from("test")));
+    }
+    #[test]
+    fn success() {
+        let mut args = Box::from(
+            vec![
+                String::from("assets/test.txt"),
+                String::from("assets/test_output.txt"),
+            ]
+            .into_iter(),
+        );
+        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        assert_eq!(result, Ok(String::from("test")));
+    }
 }
