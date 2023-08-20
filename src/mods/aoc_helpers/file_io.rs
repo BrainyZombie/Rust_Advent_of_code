@@ -1,8 +1,8 @@
 use std::fs;
-pub fn file_io<T, F>(mut args: T, f: F) -> Result<String, String>
+pub fn file_io<'a, T: 'a, F>(mut args: Box<T>, f: F) -> Result<String, String>
 where
     T: Iterator<Item = String>,
-    F: FnOnce(&str, T) -> Result<String, String>,
+    F: FnOnce(&str, Box<dyn Iterator<Item = String> + 'a>) -> Result<String, String>,
 {
     let input_file_path = match args.next() {
         Some(s) => s,
@@ -36,13 +36,13 @@ mod tests {
     #[test]
     fn no_input_path() {
         let mut args = Box::from(vec![].into_iter());
-        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        let result = file_io(args, |s, _| Ok(s.to_string()));
         assert_eq!(result, Err(String::from("No input file path specified!")));
     }
     #[test]
     fn no_output_path() {
         let mut args = Box::from(vec![String::from("assets/input1.txt")].into_iter());
-        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        let result = file_io(args, |s, _| Ok(s.to_string()));
         assert_eq!(result, Err(String::from("No output file path specified!")));
     }
     #[test]
@@ -54,7 +54,7 @@ mod tests {
             ]
             .into_iter(),
         );
-        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        let result = file_io(args, |s, _| Ok(s.to_string()));
         assert!(result.is_err_and(|s| s.starts_with("Read file error:")));
     }
     #[test]
@@ -66,7 +66,7 @@ mod tests {
             ]
             .into_iter(),
         );
-        let result = file_io(&mut args, |s, _| Err(s.to_string()));
+        let result = file_io(args, |s, _| Err(s.to_string()));
         assert_eq!(result, Err(String::from("test")));
     }
     #[test]
@@ -78,7 +78,7 @@ mod tests {
             ]
             .into_iter(),
         );
-        let result = file_io(&mut args, |s, _| Ok(s.to_string()));
+        let result = file_io(args, |s, _| Ok(s.to_string()));
         assert_eq!(result, Ok(String::from("test")));
     }
 }

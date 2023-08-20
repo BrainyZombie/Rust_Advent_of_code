@@ -1,5 +1,5 @@
 mod mods;
-use mods::mains;
+use mods::MAINS;
 use std::env;
 
 fn get_fn_number<T>(args: &mut Box<T>) -> Result<usize, String>
@@ -31,7 +31,7 @@ fn main() {
         }
     };
 
-    (mains[i])(args);
+    (MAINS[i])(args);
 }
 
 #[cfg(test)]

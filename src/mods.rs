@@ -9,7 +9,7 @@ where
     T: Iterator<Item = String> + ?Sized,
 {
 }
-pub const mains: [MainFn<dyn Iterator<Item = String>>; 100] = {
+pub const MAINS: [MainFn<dyn Iterator<Item = String>>; 100] = {
     let mut arr: [MainFn<dyn Iterator<Item = String>>; 100] = [noop; 100];
     arr[0] = day1_1::main;
     arr
