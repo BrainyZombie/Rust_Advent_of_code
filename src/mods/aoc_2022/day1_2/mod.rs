@@ -5,7 +5,7 @@ pub fn main<T: Iterator<Item = String>>(args: T) {
     let args = Box::from(
         vec![
             String::from("assets/2022_1_input.txt"),
-            String::from("assets/2022_1_1_output.txt"),
+            String::from("assets/2022_1_2_output.txt"),
         ]
         .into_iter()
         .chain(args),
