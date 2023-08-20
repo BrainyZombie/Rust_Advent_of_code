@@ -1,29 +1,32 @@
+mod mods;
+use mods::mains;
 use std::env;
 
-mod mods;
-// Add more module imports for each file you created
+fn get_fn_number(args: &mut env::Args) -> Result<usize, String> {
+    args.next()
+        .map_or(Err(String::from("Specify function number to run")), |s| {
+            s.parse::<usize>()
+                .map_err(|e| format!("Unable to parse integer argument: {e}"))
+        })
+        .map_or_else(Err, |i| {
+            if i > 100 {
+                Err(String::from("The number must be between 0 and 99."))
+            } else {
+                Ok(i)
+            }
+        })
+}
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-
-    if args.len() < 2 {
-        println!("Please provide a file number as an argument (e.g., 01, 02, ...)");
-        return;
-    }
-
-    let mains = mods::MODS;
-
-    match args[1].parse::<usize>() {
-        Ok(num) => {
-            if num <= 99 {
-                let func: fn(Vec<String>) = mains[num];
-                func(args[1..].to_vec());
-            } else {
-                println!("The number must be between 0 and 99.")
-            }
-        }
-        Err(_) => {
-            println!("Invalid integer argument provided.")
+    let mut args = env::args();
+    args.next();
+    let i = match get_fn_number(&mut args) {
+        Ok(i) => i,
+        Err(str) => {
+            println!("{str}");
+            return;
         }
     };
+
+    (mains[i])(args)
 }
