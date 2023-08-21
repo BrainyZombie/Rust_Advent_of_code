@@ -4,8 +4,8 @@ use crate::mods::aoc_helpers::file_io::file_io;
 pub fn main<T: Iterator<Item = String>>(args: T) {
     let args = Box::from(
         vec![
-            String::from("assets/2022_3_input.txt"),
-            String::from("assets/2022_3_2_output.txt"),
+            String::from("assets/2022_4_input.txt"),
+            String::from("assets/2022_4_1_output.txt"),
         ]
         .into_iter()
         .chain(args),
