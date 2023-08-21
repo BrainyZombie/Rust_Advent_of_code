@@ -35,19 +35,19 @@ mod tests {
 
     #[test]
     fn no_input_path() {
-        let mut args = Box::from(vec![].into_iter());
+        let args = Box::from(vec![].into_iter());
         let result = file_io(args, |s, _| Ok(s.to_string()));
         assert_eq!(result, Err(String::from("No input file path specified!")));
     }
     #[test]
     fn no_output_path() {
-        let mut args = Box::from(vec![String::from("assets/input1.txt")].into_iter());
+        let args = Box::from(vec![String::from("assets/input1.txt")].into_iter());
         let result = file_io(args, |s, _| Ok(s.to_string()));
         assert_eq!(result, Err(String::from("No output file path specified!")));
     }
     #[test]
     fn invalid_input_path() {
-        let mut args = Box::from(
+        let args = Box::from(
             vec![
                 String::from("assets/test_1.txt"),
                 String::from("assets/test_output.txt"),
@@ -59,7 +59,7 @@ mod tests {
     }
     #[test]
     fn internal_error() {
-        let mut args = Box::from(
+        let args = Box::from(
             vec![
                 String::from("assets/test.txt"),
                 String::from("assets/test_output.txt"),
@@ -71,7 +71,7 @@ mod tests {
     }
     #[test]
     fn success() {
-        let mut args = Box::from(
+        let args = Box::from(
             vec![
                 String::from("assets/test.txt"),
                 String::from("assets/test_output.txt"),

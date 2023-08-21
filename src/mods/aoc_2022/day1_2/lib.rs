@@ -3,7 +3,7 @@ where
     T: Iterator<Item = String>,
 {
     let mut curr_sum = 0;
-    let mut calorieList: Vec<i32> = input
+    let mut calorie_list: Vec<i32> = input
         .lines()
         .map(|l| l.parse::<i32>().ok())
         .filter_map(|num| match num {
@@ -18,6 +18,6 @@ where
             }
         })
         .collect();
-    calorieList.sort_unstable();
-    Ok(calorieList.iter().rev().take(3).sum::<i32>().to_string())
+    calorie_list.sort_unstable();
+    Ok(calorie_list.iter().rev().take(3).sum::<i32>().to_string())
 }
