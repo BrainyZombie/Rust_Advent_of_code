@@ -9,6 +9,7 @@ use aoc_2022::day3_2;
 use aoc_2022::day4_1;
 use aoc_2022::day4_2;
 use aoc_2022::day5_1;
+use aoc_2022::day5_2;
 
 type MainFn<T> = fn(Box<T>);
 
@@ -28,5 +29,6 @@ pub const MAINS: [MainFn<dyn Iterator<Item = String>>; 100] = {
     arr[6] = day4_1::main;
     arr[7] = day4_2::main;
     arr[8] = day5_1::main;
+    arr[9] = day5_2::main;
     arr
 };
