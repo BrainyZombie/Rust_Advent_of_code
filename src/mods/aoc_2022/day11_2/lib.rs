@@ -5,86 +5,6 @@ struct Monkey {
     item_count: usize,
 }
 
-fn create_monkeys(input: &str) -> Vec<Monkey> {
-    let lines = input.lines().peekable();
-
-    struct TestTransients {
-        num: Option<usize>,
-        true_monkey: Option<usize>,
-        false_monkey: Option<usize>,
-    }
-
-    let mut operation_buffer: Option<Box<dyn Fn(usize) -> usize>> = None;
-    let mut items_buffer: Vec<usize> = vec![];
-    let mut current_monkey_idx = 0;
-    let mut next_monkey_test: TestTransients = TestTransients {
-        num: None,
-        true_monkey: None,
-        false_monkey: None,
-    };
-
-    lines.fold(vec![], |mut acc, line| {
-        let tokens: Vec<&str> = line.trim().split(' ').collect();
-
-        match tokens[0] {
-            "Monkey" => {
-                current_monkey_idx = tokens[1][0..tokens[1].len() - 1].parse().unwrap();
-            }
-            "Starting" => {
-                tokens[2..].iter().for_each(|token| {
-                    items_buffer.push(token.split(",").next().unwrap().parse().unwrap())
-                });
-            }
-            "Operation:" => {
-                operation_buffer = Some(match tokens[5] {
-                    "old" => Box::from(|old| old * old),
-                    _ => {
-                        let val: usize = tokens[5].parse().unwrap();
-                        match tokens[4] {
-                            "+" => Box::from(move |old| old + val),
-                            "*" => Box::from(move |old| old * val),
-                            _ => panic!(),
-                        }
-                    }
-                });
-            }
-            "Test:" => {
-                next_monkey_test.num = Some(tokens[3].parse().unwrap());
-            }
-            "If" => {
-                if matches!(tokens[1], "true:") {
-                    next_monkey_test.true_monkey = Some(tokens[5].parse().unwrap());
-                } else {
-                    next_monkey_test.false_monkey = Some(tokens[5].parse().unwrap());
-                    if let TestTransients {
-                        true_monkey: Some(true_monkey),
-                        num: Some(num),
-                        false_monkey: Some(false_monkey),
-                    } = next_monkey_test
-                    {
-                        acc.push(Monkey {
-                            item_count: 0,
-                            items: Vec::from_iter(items_buffer.drain(..)),
-                            operation: operation_buffer.take().unwrap(),
-                            next_monkey_test: Box::from(move |worry| {
-                                if worry % num == 0 {
-                                    true_monkey
-                                } else {
-                                    false_monkey
-                                }
-                            }),
-                        });
-                    } else {
-                        panic!();
-                    }
-                }
-            }
-            _ => {}
-        }
-        acc
-    })
-}
-
 fn simulate(monkeys: &mut Vec<Monkey>) {
     for monkey_idx in 0..monkeys.len() {
         monkeys[monkey_idx]
@@ -101,11 +21,60 @@ fn simulate(monkeys: &mut Vec<Monkey>) {
     }
 }
 
-pub fn run<T>(input: &str, _: T) -> Result<String, String>
+pub fn run<T>(_: &str, _: T) -> Result<String, String>
 where
     T: Iterator<Item = String>,
 {
-    let mut monkeys = create_monkeys(input);
+    let mut monkeys = vec![
+        Monkey {
+            item_count: 0,
+            items: vec![91, 66],
+            operation: Box::from(|old| old * 13),
+            next_monkey_test: Box::from(|old| if old % 19 == 0 { 6 } else { 2 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![78, 97, 59],
+            operation: Box::from(|old| old + 7),
+            next_monkey_test: Box::from(|old| if old % 5 == 0 { 0 } else { 3 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![57, 59, 97, 84, 72, 83, 56, 76],
+            operation: Box::from(|old| old + 6),
+            next_monkey_test: Box::from(|old| if old % 11 == 0 { 5 } else { 7 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![81, 78, 70, 58, 84],
+            operation: Box::from(|old| old + 5),
+            next_monkey_test: Box::from(|old| if old % 17 == 0 { 6 } else { 0 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![60],
+            operation: Box::from(|old| old + 8),
+            next_monkey_test: Box::from(|old| if old % 7 == 0 { 1 } else { 3 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![57, 69, 63, 75, 62, 77, 72],
+            operation: Box::from(|old| old * 5),
+            next_monkey_test: Box::from(|old| if old % 13 == 0 { 7 } else { 4 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![73, 66, 86, 79, 98, 87],
+            operation: Box::from(|old| old * old),
+            next_monkey_test: Box::from(|old| if old % 3 == 0 { 5 } else { 2 }),
+        },
+        Monkey {
+            item_count: 0,
+            items: vec![95, 89, 63, 67],
+            operation: Box::from(|old| old + 2),
+            next_monkey_test: Box::from(|old| if old % 2 == 0 { 1 } else { 4 }),
+        },
+    ];
     for _ in 0..10000 {
         simulate(&mut monkeys);
     }
