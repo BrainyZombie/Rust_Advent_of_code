@@ -1,0 +1,10 @@
+{
+	"version": "2.0.0",
+	"inputs": [
+		{
+			"id": "pickExecutable",
+			"type": "promptString",
+			"description": "Pick the number of the executable to debug"
+		}
+	]
+}
