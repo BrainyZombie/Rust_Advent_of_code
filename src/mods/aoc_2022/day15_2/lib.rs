@@ -55,11 +55,9 @@ pub fn run<T>(input: &str, _: T) -> Result<String, String>
 where
     T: Iterator<Item = String>,
 {
-    for target_y in 0..4000000 {
-        let mut ranges: Vec<(isize, isize)> = vec![];
-        let mut existing_beacons: HashSet<isize> = HashSet::new();
-
-        input.lines().for_each(|line| {
+    let parsed_data: Vec<(isize, isize, isize, isize, isize)> = input
+        .lines()
+        .map(|line| {
             let comma = line.find(',').unwrap();
             let colon = line.find(':').unwrap();
             let x_sensor: isize = line[12..comma].parse().unwrap();
@@ -69,19 +67,28 @@ where
             let y_beacon: isize = line[comma + 4..].parse().unwrap();
 
             let manhattan_distance = x_sensor.sub(x_beacon).abs() + y_sensor.sub(y_beacon).abs();
-            let used_distance = y_sensor.sub(target_y).abs();
-            let available_distance = manhattan_distance - used_distance;
+            (x_sensor, y_sensor, x_beacon, y_beacon, manhattan_distance)
+        })
+        .collect();
+    for target_y in 0..4000000 {
+        let mut ranges: Vec<(isize, isize)> = vec![];
+        let mut existing_beacons: HashSet<isize> = HashSet::new();
+        parsed_data.iter().for_each(
+            |(x_sensor, y_sensor, x_beacon, y_beacon, manhattan_distance)| {
+                let used_distance = y_sensor.sub(target_y).abs();
+                let available_distance = manhattan_distance - used_distance;
 
-            if available_distance >= 0 {
-                let edge1 = x_sensor + available_distance;
-                let edge2 = x_sensor - available_distance;
-                let range = (edge1.min(edge2), edge1.max(edge2));
-                add_ranges(&mut ranges, range);
-            }
-            if y_beacon == target_y {
-                existing_beacons.insert(x_beacon);
-            }
-        });
+                if available_distance >= 0 {
+                    let edge1 = x_sensor + available_distance;
+                    let edge2 = x_sensor - available_distance;
+                    let range = (edge1.min(edge2).max(0), edge1.max(edge2).min(4000000));
+                    add_ranges(&mut ranges, range);
+                }
+                if *y_beacon == target_y {
+                    existing_beacons.insert(*x_beacon);
+                }
+            },
+        );
 
         if ranges.len() != 1 {
             let result = (ranges[1].0 - 1) * 4000000 + target_y;
