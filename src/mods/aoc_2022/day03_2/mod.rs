@@ -1,4 +1,6 @@
 mod lib;
+use std::time::Instant;
+
 use crate::mods::aoc_helpers::file_io::file_io;
 
 pub fn main<T: Iterator<Item = String>>(args: T) {
@@ -11,9 +13,11 @@ pub fn main<T: Iterator<Item = String>>(args: T) {
         .chain(args),
     );
 
+    let time = Instant::now();
     let res = file_io(args, lib::run);
     match res {
         Ok(res) => println!("Result is {res}"),
         Err(res) => println!("Err is {res}"),
     };
+    println!("Took {:?}", time.elapsed());
 }

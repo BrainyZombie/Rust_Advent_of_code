@@ -81,7 +81,7 @@ where
                 if available_distance >= 0 {
                     let edge1 = x_sensor + available_distance;
                     let edge2 = x_sensor - available_distance;
-                    let range = (edge1.min(edge2).max(0), edge1.max(edge2).min(4000000));
+                    let range = (edge1.min(edge2), edge1.max(edge2));
                     add_ranges(&mut ranges, range);
                 }
                 if *y_beacon == target_y {

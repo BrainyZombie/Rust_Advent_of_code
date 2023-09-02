@@ -6,13 +6,12 @@ use crate::mods::aoc_helpers::file_io::file_io;
 pub fn main<T: Iterator<Item = String>>(args: T) {
     let args = Box::from(
         vec![
-            String::from("assets/2022_15_input.txt"),
-            String::from("assets/2022_15_2_output.txt"),
+            String::from("assets/2022_16_input.txt"),
+            String::from("assets/2022_16_2_output.txt"),
         ]
         .into_iter()
         .chain(args),
     );
-
     let time = Instant::now();
     let res = file_io(args, lib::run);
     match res {
