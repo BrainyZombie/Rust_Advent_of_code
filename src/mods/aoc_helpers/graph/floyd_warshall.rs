@@ -1,22 +1,13 @@
 use std::collections::HashMap;
 
-use super::{Graph, GraphNode, NodeId, NodeNeighbor};
-
-pub type ShortestPaths<Id> = HashMap<Id, HashMap<Id, isize>>;
-pub trait ShortestPath {
-    type Id: NodeId;
-    fn get_distance(&self, from: &Self::Id, to: &Self::Id) -> Option<isize>;
-}
-impl<T: NodeId> ShortestPath for ShortestPaths<T> {
-    type Id = T;
-    fn get_distance(&self, from: &T, to: &T) -> Option<isize> {
-        self.get(from).and_then(|from| from.get(to)).copied()
-    }
-}
+use super::{Graph, GraphNode, NodeNeighbor};
 
 pub fn floyd_warshall<G: Graph>(
     graph: &G,
-) -> impl ShortestPath<Id = <<G as Graph>::GraphNode as GraphNode>::NodeId> {
+) -> impl Fn(
+    &<<G as Graph>::GraphNode as GraphNode>::NodeId,
+    &<<G as Graph>::GraphNode as GraphNode>::NodeId,
+) -> Option<isize> {
     let mut shortest_paths = HashMap::new();
 
     let nodes = graph.get_nodes();
@@ -72,5 +63,10 @@ pub fn floyd_warshall<G: Graph>(
         })
     });
 
-    shortest_paths
+    move |from, to| {
+        shortest_paths
+            .get(from)
+            .and_then(|from_distances| from_distances.get(to))
+            .copied()
+    }
 }

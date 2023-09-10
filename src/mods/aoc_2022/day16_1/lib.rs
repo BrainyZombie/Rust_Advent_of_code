@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
 use crate::mods::aoc_helpers::graph::{
-    floyd_warshall::{floyd_warshall, ShortestPath},
-    Graph, GraphNode, NodeId, NodeNeighbor,
+    floyd_warshall::floyd_warshall, Graph, GraphNode, NodeId, NodeNeighbor,
 };
 
 impl NodeId for String {}
@@ -60,7 +59,7 @@ fn create_valves(input: &str) -> Vec<Valve> {
 fn dfs(
     current_valve: &str,
     valves: &ValveGraph,
-    shortest_paths: &impl ShortestPath<Id = String>,
+    shortest_paths: &impl Fn(&String, &String) -> Option<isize>,
     open_valves: &[&str],
     time_remaining: usize,
 ) -> isize {
@@ -77,7 +76,7 @@ fn dfs(
         ((valves.get(current_valve).unwrap().flow_rate) * (time_remaining - 1)) as isize;
     let mut result: isize = 0;
     open_valves.iter().for_each(|to_open| {
-        let path = shortest_paths.get_distance(&current_valve.to_string(), &to_open.to_string());
+        let path = (shortest_paths)(&current_valve.to_string(), &to_open.to_string());
         if let Some(distance) = path {
             let open_valves: Vec<&str> = open_valves
                 .iter()
