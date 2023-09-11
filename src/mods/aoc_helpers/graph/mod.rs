@@ -1,22 +1,27 @@
 pub mod floyd_warshall;
 
-use std::hash::Hash;
-
-pub trait NodeId: Eq + Hash + Clone {}
+use std::{borrow::Borrow, hash::Hash};
 
 #[derive(Debug, Clone, Copy)]
-pub struct NodeNeighbor<ID: NodeId> {
+pub struct Edge<ID> {
     pub path_weight: isize,
     pub id: ID,
 }
-pub trait GraphNode {
-    type NodeId: NodeId;
-    fn get_id(&self) -> &Self::NodeId;
-    fn get_neighbors(&self) -> Vec<NodeNeighbor<Self::NodeId>>;
+pub trait GraphNode<N>
+where
+    Self::NodeId: Borrow<N>,
+    N: Hash + Eq + ?Sized,
+{
+    type NodeId: ?Sized + Hash + Eq;
+    fn get_id(&self) -> &N;
+    fn get_edges(&self) -> Vec<Edge<&N>>;
 }
 
-pub trait Graph {
-    type GraphNode: GraphNode;
+pub trait Graph<N>
+where
+    N: Hash + Eq + ?Sized,
+{
+    type GraphNode: GraphNode<N>;
     fn get_nodes(&self) -> Vec<&Self::GraphNode>;
-    fn get_node(&self, id: <Self::GraphNode as GraphNode>::NodeId) -> Option<&Self::GraphNode>;
+    fn get_node(&self, id: &N) -> Option<&Self::GraphNode>;
 }
