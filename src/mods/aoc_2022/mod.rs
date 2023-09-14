@@ -30,3 +30,5 @@ pub mod day15_1;
 pub mod day15_2;
 pub mod day16_1;
 pub mod day16_2;
+pub mod day17_1;
+pub mod day17_2;
