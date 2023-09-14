@@ -1,25 +1,54 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
+
+use crate::mods::aoc_helpers::graph::{floyd_warshall::floyd_warshall, Edge, Graph, GraphNode};
 
 #[derive(Debug)]
-struct Valve<'a> {
-    id: &'a str,
-    is_open: bool,
+struct Valve {
+    id: Rc<str>,
     flow_rate: usize,
-    next_valves: Vec<&'a str>,
+    next_valves: Vec<Rc<str>>,
 }
 
-fn create_valves<'a>(input: &'a str) -> Vec<Valve<'a>> {
-    let valves: Vec<Valve<'a>> = input
+impl GraphNode<str> for Valve {
+    type NodeId = Rc<str>;
+    fn get_id(&self) -> &str {
+        &self.id[..]
+    }
+    fn get_edges(&self) -> Vec<Edge<&str>> {
+        self.next_valves
+            .iter()
+            .map(|n| Edge::<&str> {
+                id: n,
+                path_weight: 1,
+            })
+            .collect()
+    }
+}
+
+type ValveGraph = HashMap<String, Valve>;
+
+impl Graph<str> for ValveGraph {
+    type GraphNode = Valve;
+    fn get_node(&self, id: &str) -> Option<&Self::GraphNode> {
+        self.get(id)
+    }
+    fn get_nodes(&self) -> Vec<&Self::GraphNode> {
+        self.values().collect()
+    }
+}
+
+fn create_valves(input: &str) -> Vec<Valve> {
+    let valves: Vec<Valve> = input
         .lines()
         .map(|line| Valve {
-            id: &line[6..=7],
-            is_open: false,
+            id: line[6..=7].into(),
             flow_rate: line[23..line.find(';').unwrap()].parse().unwrap(),
             next_valves: line[line
                 .find("valves")
                 .unwrap_or_else(|| line.find("valve").unwrap() - 1)
                 + 7..]
                 .split(", ")
+                .map(|key| key.into())
                 .collect(),
         })
         .collect();
@@ -27,164 +56,84 @@ fn create_valves<'a>(input: &'a str) -> Vec<Valve<'a>> {
     valves
 }
 
-fn get_max_possible_flow(valves: &mut HashMap<String, Valve>, time_remaining: usize) -> usize {
-    let mut ordered_open_valve_flows: Vec<usize> = valves
-        .iter()
-        .flat_map(|v| {
-            if !v.1.is_open && v.1.flow_rate > 0 {
-                Some(v.1.flow_rate)
-            } else {
-                None
-            }
-        })
-        .collect();
-    ordered_open_valve_flows.sort_unstable();
-    ordered_open_valve_flows.reverse();
-
-    ordered_open_valve_flows
-        .chunks(2)
-        .fold(
-            (0, time_remaining),
-            |(existing_flow, time_remaining), flow| {
-                if time_remaining < 2 {
-                    (existing_flow, 0)
-                } else {
-                    (
-                        existing_flow
-                            + (flow[0] + flow.get(1).unwrap_or(&0)) * (time_remaining - 1),
-                        time_remaining - 2,
-                    )
-                }
-            },
-        )
-        .0
-}
-
-fn g_v<'a, 'b>(valves: &'a mut HashMap<String, Valve<'b>>, key: &str) -> &'a mut Valve<'b> {
-    valves.get_mut(key).unwrap()
+fn get_max_possible_flow(
+    valves: &ValveGraph,
+    open_valves: &[&str],
+    mut time_remaining: usize,
+) -> usize {
+    open_valves.iter().fold(0, |acc, v| {
+        if time_remaining > 2 {
+            time_remaining -= 2;
+            return acc + valves.get(*v).unwrap().flow_rate * (time_remaining + 1);
+        }
+        acc
+    })
 }
 
 fn dfs(
-    valves: &mut HashMap<String, Valve>,
-    current_valve_key: (&str, &str),
+    current_valve: &str,
+    valves: &ValveGraph,
+    shortest_paths: &impl Fn(&str, &str) -> Option<isize>,
+    open_valves: &[&str],
     time_remaining: usize,
     needed_flow: usize,
 ) -> usize {
     if time_remaining < 2 {
         return 0;
     }
-    let max_possible_flow: usize = get_max_possible_flow(valves, time_remaining);
-    if needed_flow >= max_possible_flow {
+
+    let current_valve_pressure =
+        valves.get(current_valve).unwrap().flow_rate * (time_remaining - 1);
+
+    if current_valve_pressure + get_max_possible_flow(valves, open_valves, time_remaining - 1)
+        < needed_flow
+    {
         return 0;
     }
 
-    let mut final_result = 0usize;
-    let next_valves = (
-        g_v(valves, current_valve_key.0).next_valves.clone(),
-        g_v(valves, current_valve_key.1).next_valves.clone(),
-    );
-
-    if !g_v(valves, current_valve_key.0).is_open
-        && g_v(valves, current_valve_key.0).flow_rate > 0
-        && !g_v(valves, current_valve_key.1).is_open
-        && g_v(valves, current_valve_key.1).flow_rate > 0
-        && current_valve_key.0 != current_valve_key.1
-    {
-        g_v(valves, current_valve_key.0).is_open = true;
-        g_v(valves, current_valve_key.1).is_open = true;
-
-        let current_valve_total_flow = (g_v(valves, current_valve_key.0).flow_rate
-            + g_v(valves, current_valve_key.1).flow_rate)
-            * (time_remaining - 1);
-
-        let mut result = 0usize;
-
-        next_valves
-            .0
-            .iter()
-            .flat_map(|y| next_valves.1.iter().clone().map(move |x| (*x, *y)))
-            .for_each(|next_valve_key| {
-                result = result.max(dfs(
-                    valves,
-                    next_valve_key,
-                    time_remaining - 2,
-                    final_result
-                        .max(result.max(needed_flow.saturating_sub(current_valve_total_flow))),
-                ));
-            });
-        result += current_valve_total_flow;
-        final_result = final_result.max(result);
-        g_v(valves, current_valve_key.0).is_open = false;
-        g_v(valves, current_valve_key.1).is_open = false;
-    }
-
-    if !g_v(valves, current_valve_key.0).is_open && g_v(valves, current_valve_key.0).flow_rate > 0 {
-        g_v(valves, current_valve_key.0).is_open = true;
-
-        let current_valve_total_flow =
-            g_v(valves, current_valve_key.0).flow_rate * (time_remaining - 1);
-
-        let mut result = 0usize;
-
-        next_valves.1.iter().for_each(|next_valve_key| {
+    let mut result: usize = 0;
+    open_valves.iter().for_each(|to_open| {
+        let path = (shortest_paths)(current_valve, to_open);
+        if let Some(distance) = path {
+            let open_valves: Vec<&str> = open_valves
+                .iter()
+                .filter(|v| *v != to_open)
+                .copied()
+                .collect();
             result = result.max(dfs(
+                to_open,
                 valves,
-                (current_valve_key.0, next_valve_key),
-                time_remaining - 1,
-                final_result.max(result.max(needed_flow.saturating_sub(current_valve_total_flow))),
+                shortest_paths,
+                &open_valves,
+                time_remaining.saturating_sub(distance as usize + 1),
+                result,
             ));
-        });
-        result += current_valve_total_flow;
-        final_result = final_result.max(result);
-        g_v(valves, current_valve_key.0).is_open = false;
-    }
-
-    if !g_v(valves, current_valve_key.1).is_open && g_v(valves, current_valve_key.1).flow_rate > 0 {
-        g_v(valves, current_valve_key.1).is_open = true;
-
-        let current_valve_total_flow =
-            g_v(valves, current_valve_key.1).flow_rate * (time_remaining - 1);
-
-        let mut result = 0usize;
-
-        next_valves.1.iter().for_each(|next_valve_key| {
-            result = result.max(dfs(
-                valves,
-                (next_valve_key, current_valve_key.1),
-                time_remaining - 1,
-                final_result.max(result.max(needed_flow.saturating_sub(current_valve_total_flow))),
-            ));
-        });
-        result += current_valve_total_flow;
-        final_result = final_result.max(result);
-        g_v(valves, current_valve_key.1).is_open = false;
-    }
-
-    next_valves
-        .0
-        .iter()
-        .flat_map(|y| next_valves.1.iter().clone().map(move |x| (*x, *y)))
-        .for_each(|next_valve_key| {
-            final_result = final_result.max(dfs(
-                valves,
-                next_valve_key,
-                time_remaining - 1,
-                final_result.max(needed_flow),
-            ));
-        });
-
-    final_result
+        }
+    });
+    result + current_valve_pressure
 }
 
 pub fn run<T>(input: &str, _: T) -> Result<String, String>
 where
     T: Iterator<Item = String>,
 {
-    let mut valves: HashMap<String, Valve> = HashMap::from_iter(
-        create_valves(input)
-            .drain(..)
-            .map(|valve| (valve.id.to_string(), valve)),
-    );
-    let result = dfs(&mut valves, ("AA", "AA"), 26, 0);
+    let mut valves = create_valves(input);
+
+    let valve_graph: ValveGraph =
+        HashMap::from_iter(valves.drain(..).map(|valve| (valve.id.to_string(), valve)));
+
+    let shortest_paths = floyd_warshall(&valve_graph);
+    let open_valves: Vec<&str> = valve_graph
+        .iter()
+        .filter_map(|(key, valve)| {
+            if valve.flow_rate != 0 {
+                Some(&key[..])
+            } else {
+                None
+            }
+        })
+        .collect();
+
+    let result = dfs("AA", &valve_graph, &shortest_paths, &open_valves, 31, 0);
     Ok(result.to_string())
 }

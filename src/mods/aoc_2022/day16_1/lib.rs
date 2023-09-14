@@ -1,16 +1,16 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, rc::Rc};
 
 use crate::mods::aoc_helpers::graph::{floyd_warshall::floyd_warshall, Edge, Graph, GraphNode};
 
 #[derive(Debug)]
 struct Valve {
-    id: String,
+    id: Rc<str>,
     flow_rate: usize,
-    next_valves: Vec<String>,
+    next_valves: Vec<Rc<str>>,
 }
 
 impl GraphNode<str> for Valve {
-    type NodeId = String;
+    type NodeId = Rc<str>;
     fn get_id(&self) -> &str {
         &self.id[..]
     }
@@ -18,7 +18,7 @@ impl GraphNode<str> for Valve {
         self.next_valves
             .iter()
             .map(|n| Edge::<&str> {
-                id: n.as_str(),
+                id: n,
                 path_weight: 1,
             })
             .collect()
@@ -41,14 +41,14 @@ fn create_valves(input: &str) -> Vec<Valve> {
     let valves: Vec<Valve> = input
         .lines()
         .map(|line| Valve {
-            id: line[6..=7].to_string(),
+            id: line[6..=7].into(),
             flow_rate: line[23..line.find(';').unwrap()].parse().unwrap(),
             next_valves: line[line
                 .find("valves")
                 .unwrap_or_else(|| line.find("valve").unwrap() - 1)
                 + 7..]
                 .split(", ")
-                .map(|key| key.to_string())
+                .map(|key| key.into())
                 .collect(),
         })
         .collect();
@@ -83,7 +83,7 @@ fn dfs(
     }
 
     let current_valve_pressure =
-        ((valves.get(current_valve).unwrap().flow_rate) * (time_remaining - 1)) as usize;
+        valves.get(current_valve).unwrap().flow_rate * (time_remaining - 1);
 
     if current_valve_pressure + get_max_possible_flow(valves, open_valves, time_remaining - 1)
         < needed_flow
@@ -123,7 +123,7 @@ where
         HashMap::from_iter(valves.drain(..).map(|valve| (valve.id.to_string(), valve)));
 
     let shortest_paths = floyd_warshall(&valve_graph);
-    let mut open_valves: Vec<&str> = valve_graph
+    let open_valves: Vec<&str> = valve_graph
         .iter()
         .filter_map(|(key, valve)| {
             if valve.flow_rate != 0 {
@@ -133,14 +133,6 @@ where
             }
         })
         .collect();
-
-    open_valves.sort_by(|v1, v2| {
-        valve_graph
-            .get(*v2)
-            .unwrap()
-            .flow_rate
-            .cmp(&valve_graph.get(*v1).unwrap().flow_rate)
-    });
 
     let result = dfs("AA", &valve_graph, &shortest_paths, &open_valves, 31, 0);
     Ok(result.to_string())
